@@ -1,0 +1,50 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SafePath AI — requirements.txt
+# Install with: pip install -r requirements.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Web framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+
+# Database (ORM + async drivers)
+sqlalchemy==2.0.36
+aiosqlite==0.20.0               # async SQLite driver for prototype
+# asyncpg==0.30.0               # async PostgreSQL driver (production — uncomment)
+alembic==1.14.0                 # database migrations
+
+# Data validation / serialisation
+pydantic==2.10.3
+pydantic-settings==2.7.0
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Authentication (Firebase Admin SDK)
+firebase-admin==6.6.0
+
+# HTTP client (used by Firebase, also available for outbound calls)
+httpx==0.28.1
+
+# Multipart / file uploads
+python-multipart==0.0.20
+aiofiles==24.1.0
+
+# Geospatial calculations (Haversine distance, GeoJSON)
+geopy==2.4.1
+shapely==2.0.6
+
+# Image handling for vision model pipeline
+Pillow==11.0.0
+
+# Numerical computing (sensor heuristics + future model inference)
+numpy==2.2.0
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.2
+# httpx is already listed above — used as both HTTP client and async test client
+
+# Utilities
+python-jose[cryptography]==3.3.0   # JWT helpers (used alongside Firebase)
+passlib[bcrypt]==1.7.4             # password hashing (for fallback local auth)

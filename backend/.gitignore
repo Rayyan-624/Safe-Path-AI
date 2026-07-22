@@ -1,0 +1,76 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SafePath AI Backend — .gitignore
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Environment / secrets ──────────────────────────────────────────────────
+.env
+*.env
+firebase-service-account.json
+*-service-account.json
+*-credentials.json
+
+# ── Python ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+*.pyc
+
+# ── Virtual environments ───────────────────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+.env/
+
+# ── SQLite database files ─────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Alembic ───────────────────────────────────────────────────────────────
+# (keep alembic/versions/*.py — those are migration scripts)
+
+# ── Uploaded images / media ───────────────────────────────────────────────
+uploads/
+media/
+*.jpg
+*.jpeg
+*.png
+*.bmp
+
+# ── AI model weights (large binary files) ─────────────────────────────────
+*.onnx
+*.tflite
+*.pt
+*.pth
+*.h5
+*.pkl
+models/
+
+# ── Testing / coverage ────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
