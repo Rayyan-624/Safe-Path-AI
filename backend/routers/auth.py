@@ -61,7 +61,7 @@ async def register(
             firebase_uid=firebase_uid,
             email=email,
             display_name=display_name,
-            role=UserRole.DRIVER.value,
+            role=claims.get("role", UserRole.DRIVER.value),
         )
         db.add(user)
         await db.flush()

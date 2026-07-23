@@ -1,18 +1,31 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoMailOutline, IoLockClosedOutline, IoEyeOutline, IoEyeOffOutline, IoShieldCheckmarkOutline } from 'react-icons/io5';
+import { useAuth } from '../../context/AuthContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Redirect to driver dashboard as default role path
-    navigate('/permissions');
+    setError('');
+    try {
+      const mockToken = email.toLowerCase().includes('admin') ? 'mock-admin-token' : 'mock-driver-token';
+      const loggedUser = await login(mockToken);
+      if (loggedUser.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/driver/dashboard');
+      }
+    } catch (err) {
+      setError('Failed to authenticate with backend.');
+    }
   };
 
   return (

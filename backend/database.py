@@ -96,3 +96,92 @@ async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables initialised.")
+
+    # Seeding mock data for local development/testing
+    from sqlalchemy.ext.asyncio import AsyncSession
+    async with AsyncSession(engine) as session:
+        from sqlalchemy import select
+        from models import User, HazardReport, UserRole, HazardType, SeverityLevel, RepairStatus
+
+        # Check if users already exist
+        res = await session.execute(select(User))
+        if not res.scalars().first():
+            logger.info("Seeding database with mock data...")
+            driver = User(
+                firebase_uid="mock-uid-driver",
+                email="ali.haider@gmail.com",
+                display_name="Ali Haider",
+                role=UserRole.DRIVER.value
+            )
+            admin = User(
+                firebase_uid="mock-uid-admin",
+                email="admin@safepath.gov",
+                display_name="Admin User",
+                role=UserRole.ADMIN.value
+            )
+            session.add_all([driver, admin])
+            await session.flush()
+
+            # Seed pre-populated hazards matching our frontend mocks
+            hazards = [
+                HazardReport(
+                    user_id=driver.id,
+                    latitude=24.8607,
+                    longitude=67.0099,
+                    hazard_type=HazardType.POTHOLE.value,
+                    severity=SeverityLevel.CRITICAL.value,
+                    confidence=0.92,
+                    crowdsource_count=28,
+                    is_verified=True,
+                    status=RepairStatus.REPORTED.value
+                ),
+                HazardReport(
+                    user_id=driver.id,
+                    latitude=24.8921,
+                    longitude=67.0345,
+                    hazard_type=HazardType.ROAD_CRACK.value,
+                    severity=SeverityLevel.MODERATE.value,
+                    confidence=0.85,
+                    crowdsource_count=15,
+                    is_verified=False,
+                    status=RepairStatus.ACKNOWLEDGED.value
+                ),
+                HazardReport(
+                    user_id=driver.id,
+                    latitude=24.8210,
+                    longitude=67.1023,
+                    hazard_type=HazardType.POTHOLE.value,
+                    severity=SeverityLevel.CRITICAL.value,
+                    confidence=0.88,
+                    crowdsource_count=8,
+                    is_verified=False,
+                    status=RepairStatus.IN_PROGRESS.value
+                ),
+                HazardReport(
+                    user_id=driver.id,
+                    latitude=24.9104,
+                    longitude=67.0726,
+                    hazard_type=HazardType.OPEN_MANHOLE.value,
+                    severity=SeverityLevel.CRITICAL.value,
+                    confidence=0.90,
+                    crowdsource_count=22,
+                    is_verified=True,
+                    status=RepairStatus.RESOLVED.value
+                ),
+                HazardReport(
+                    user_id=driver.id,
+                    latitude=24.8138,
+                    longitude=67.0442,
+                    hazard_type=HazardType.FLOODED_ROAD.value,
+                    severity=SeverityLevel.CRITICAL.value,
+                    confidence=0.95,
+                    crowdsource_count=38,
+                    is_verified=True,
+                    status=RepairStatus.REPORTED.value
+                )
+            ]
+            session.add_all(hazards)
+            await session.commit()
+            logger.info("Database successfully seeded.")
+        else:
+            logger.info("Database already has records, skipping seed.")

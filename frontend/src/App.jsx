@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
+import { HazardProvider } from './context/HazardContext';
 import Layout from './components/Layout';
 import RoleSwitcher from './components/RoleSwitcher';
 
@@ -36,7 +39,7 @@ import AdminReportsExport from './pages/admin/ReportsExport';
 import AdminSmartCity from './pages/admin/SmartCity';
 import AdminRoadPrediction from './pages/admin/RoadPrediction';
 
-function App() {
+function AppContent() {
   return (
     <BrowserRouter>
       <Layout>
@@ -82,6 +85,40 @@ function App() {
       {/* Floating Developer Switcher for the Evaluator */}
       <RoleSwitcher />
     </BrowserRouter>
+  );
+}
+
+function App() {
+  const [coords, setCoords] = useState({ latitude: 24.8607, longitude: 67.0099 }); // Default to Karachi coordinates
+
+  // Sync GPS Coordinates using HTML5 Geolocation API
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      const watcher = navigator.geolocation.watchPosition(
+        (position) => {
+          setCoords({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => {
+          console.warn('Geolocation access denied/unavailable, using default coordinates:', error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+
+      return () => navigator.geolocation.clearWatch(watcher);
+    }
+  }, []);
+
+  return (
+    <AuthProvider>
+      <SocketProvider currentCoords={coords}>
+        <HazardProvider currentCoords={coords}>
+          <AppContent />
+        </HazardProvider>
+      </SocketProvider>
+    </AuthProvider>
   );
 }
 

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoPersonOutline, IoMailOutline, IoCallOutline, IoLockClosedOutline, IoEyeOutline, IoEyeOffOutline, IoArrowBackOutline } from 'react-icons/io5';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SignupStep1() {
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -12,10 +14,18 @@ export default function SignupStep1() {
   const [showPassword, setShowPassword] = useState(false);
   const [vehicle, setVehicle] = useState('Car');
   const [agree, setAgree] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/permissions');
+    setError('');
+    try {
+      const mockToken = email.toLowerCase().includes('admin') ? 'mock-admin-token' : 'mock-driver-token';
+      await register(mockToken, name);
+      navigate('/permissions');
+    } catch (err) {
+      setError('Registration failed.');
+    }
   };
 
   return (
