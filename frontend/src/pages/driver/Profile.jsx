@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { mockDriverInfo, mockStats } from '../../data/mockData';
 import {
   IoCameraOutline, IoShareOutline, IoSettingsOutline, IoStatsChartOutline,
-  IoAwardOutline, IoShieldOutline, IoChevronForwardOutline, IoCalendarOutline,
+  IoNotificationsOutline, IoShieldOutline, IoChevronForwardOutline, IoCalendarOutline,
   IoLockClosedOutline, IoCallOutline, IoPersonOutline, IoLocationOutline, IoMailOutline
 } from 'react-icons/io5';
 
@@ -227,7 +227,7 @@ export default function DriverProfile() {
           <div className="flex-1 flex flex-col gap-1">
             {[
               { title: "Personal Information", sub: "Update name, email and phone number", icon: IoPersonOutline },
-              { title: "Notification Preferences", sub: "Manage your notification settings", icon: IoAwardOutline },
+              { title: "Notification Preferences", sub: "Manage your notification settings", icon: IoNotificationsOutline },
               { title: "Privacy Settings", sub: "Control your data and visibility", icon: IoLockClosedOutline },
               { title: "Connected Devices", sub: "Manage your connected devices", icon: IoSettingsOutline },
               { title: "Account Settings", sub: "Change password and security options", icon: IoShieldOutline }

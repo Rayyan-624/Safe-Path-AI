@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { mockHazards } from '../../data/mockData';
+import { useHazards } from '../../context/HazardContext';
 import {
   IoShareOutline, IoBookmarkOutline, IoPersonOutline, IoShieldCheckmarkOutline,
   IoPulseOutline, IoCalendarOutline, IoChevronBackOutline, IoChevronForwardOutline,
@@ -9,15 +10,35 @@ import {
 
 export default function DriverHazardDetails() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const { hazards } = useHazards();
 
-  // Selected Hazard Info
-  const hazard = mockHazards[0]; // Pothole HZ-2024-05-18-1023
+  // Selected Hazard Info from Backend context, fallback to mock
+  const backendHazard = hazards.find(h => h.id === id);
+  const hazard = backendHazard ? {
+    id: backendHazard.id,
+    type: backendHazard.hazard_type,
+    severity: backendHazard.severity,
+    location: `Shahrah-e-Faisal [${backendHazard.latitude.toFixed(4)}, ${backendHazard.longitude.toFixed(4)}]`,
+    confidence: Math.round(backendHazard.confidence * 100),
+    reportedBy: "Ali Haider",
+    reportedOn: new Date(backendHazard.created_at).toLocaleDateString(),
+    verifiedCount: backendHazard.crowdsource_count,
+    modelName: "CNN-LSTM v1.4",
+    description: `AI-detected ${backendHazard.hazard_type} with ${backendHazard.severity} severity on Shahrah-e-Faisal. Verified by ${backendHazard.crowdsource_count} drivers.`,
+    photos: backendHazard.image_path ? [`http://localhost:8000/${backendHazard.image_path}`] : mockHazards[0].photos,
+    comments: mockHazards[0].comments
+  } : {
+    ...mockHazards[0],
+    id: id || mockHazards[0].id
+  };
+
   const [photoIndex, setPhotoIndex] = useState(0);
 
   // Form states (Right column)
-  const [hazardType, setHazardType] = useState('Pothole');
-  const [location, setLocation] = useState('Shahrah-e-Faisal, Karachi, Pakistan');
-  const [severity, setSeverity] = useState('Critical');
+  const [hazardType, setHazardType] = useState(hazard.type);
+  const [location, setLocation] = useState(hazard.location);
+  const [severity, setSeverity] = useState(hazard.severity);
   const [notes, setNotes] = useState('');
   const [confirmed, setConfirmed] = useState(true);
 
