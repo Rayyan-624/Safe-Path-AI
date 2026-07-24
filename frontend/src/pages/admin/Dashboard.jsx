@@ -1,8 +1,8 @@
-import React from 'react';
-import { useNavigate } from 'react-serif';
+import React, { useState, useEffect } from 'react';
 import { useNavigate as useNav } from 'react-router-dom';
 import MapPlaceholder from '../../components/MapPlaceholder';
 import { mockHazards, mockStats, mockUsers } from '../../data/mockData';
+import api from '../../services/api';
 import {
   IoWarningOutline, IoShieldOutline, IoPeopleOutline, IoDocumentTextOutline,
   IoPulseOutline, IoBuildOutline, IoAlertCircleOutline, IoVolumeHighOutline,
@@ -15,29 +15,58 @@ import {
 
 export default function AdminDashboard() {
   const navigate = useNav();
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Charts Mock Data
-  const severityData = [
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const response = await api.get('/analytics/summary');
+        setSummary(response.data);
+      } catch (err) {
+        console.error('Failed to load analytics summary:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSummary();
+  }, []);
+
+  const totalReportsCount = summary?.total_reports || 4892;
+
+  // Charts Data
+  const severityData = summary ? [
+    { name: 'Critical', value: summary.by_severity?.Critical || 0, color: '#ef4444' },
+    { name: 'Moderate', value: summary.by_severity?.Moderate || 0, color: '#f97316' },
+    { name: 'Minor', value: summary.by_severity?.Minor || 0, color: '#eab308' },
+    { name: 'Safe', value: summary.by_severity?.Normal || 0, color: '#22c55e' }
+  ] : [
     { name: 'Critical', value: 342, color: '#ef4444' },
     { name: 'Moderate', value: 1256, color: '#f97316' },
     { name: 'Minor', value: 1842, color: '#eab308' },
     { name: 'Safe', value: 1452, color: '#22c55e' }
   ];
 
-  const maintenanceData = [
+  const maintenanceData = summary ? [
+    { name: 'Pending/Reported', value: summary.by_status?.Reported || 0, color: '#f97316' },
+    { name: 'In Progress', value: summary.by_status?.['In Progress'] || 0, color: '#3b82f6' },
+    { name: 'Resolved', value: summary.by_status?.Resolved || 0, color: '#22c55e' }
+  ] : [
     { name: 'Pending', value: 78, color: '#f97316' },
     { name: 'In Progress', value: 92, color: '#3b82f6' },
     { name: 'Completed', value: 75, color: '#22c55e' }
   ];
 
+  const totalTasks = maintenanceData.reduce((acc, curr) => acc + curr.value, 0) || 245;
+
   const overTimeData = [
-    { name: 'May 15', hazards: 1500 },
-    { name: 'May 16', hazards: 2800 },
-    { name: 'May 17', hazards: 3100 },
-    { name: 'May 18', hazards: 3800 },
-    { name: 'May 19', hazards: 3500 },
-    { name: 'May 20', hazards: 4200 },
-    { name: 'May 21', hazards: 4892 }
+    { name: 'May 15', hazards: Math.round(totalReportsCount * 0.4) },
+    { name: 'May 16', hazards: Math.round(totalReportsCount * 0.6) },
+    { name: 'May 17', hazards: Math.round(totalReportsCount * 0.7) },
+    { name: 'May 18', hazards: Math.round(totalReportsCount * 0.8) },
+    { name: 'May 19', hazards: Math.round(totalReportsCount * 0.85) },
+    { name: 'May 20', hazards: Math.round(totalReportsCount * 0.95) },
+    { name: 'May 21', hazards: totalReportsCount }
   ];
 
   const warnings = [
@@ -60,7 +89,7 @@ export default function AdminDashboard() {
             <div className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center"><IoWarningOutline className="w-4.5 h-4.5" /></div>
           </div>
           <div>
-            <span className="block text-2xl font-extrabold text-slate-800">4,892</span>
+            <span className="block text-2xl font-extrabold text-slate-800">{totalReportsCount.toLocaleString()}</span>
             <span className="text-[9px] font-bold text-red-500">↑ 12.5% from yesterday</span>
           </div>
         </div>
@@ -72,7 +101,7 @@ export default function AdminDashboard() {
             <div className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center"><IoShieldOutline className="w-4.5 h-4.5" /></div>
           </div>
           <div>
-            <span className="block text-2xl font-extrabold text-slate-800">342</span>
+            <span className="block text-2xl font-extrabold text-slate-800">{summary?.by_severity?.Critical || 342}</span>
             <span className="text-[9px] font-bold text-red-600">↑ 8.7% from yesterday</span>
           </div>
         </div>
@@ -92,11 +121,11 @@ export default function AdminDashboard() {
         {/* Today's Reports */}
         <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between h-28 relative">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Today's Reports</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Recent (7 Days)</span>
             <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center"><IoDocumentTextOutline className="w-4.5 h-4.5" /></div>
           </div>
           <div>
-            <span className="block text-2xl font-extrabold text-slate-800">1,256</span>
+            <span className="block text-2xl font-extrabold text-slate-800">{summary?.reports_last_7_days || 1256}</span>
             <span className="text-[9px] font-bold text-green-600">↑ 18.6% from yesterday</span>
           </div>
         </div>
@@ -116,12 +145,12 @@ export default function AdminDashboard() {
         {/* Repair Requests */}
         <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between h-28 relative">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Repair Requests</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Active Jobs</span>
             <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center"><IoBuildOutline className="w-4.5 h-4.5" /></div>
           </div>
           <div>
-            <span className="block text-2xl font-extrabold text-slate-800">245</span>
-            <span className="text-[9px] text-slate-500 font-semibold">78 Pending</span>
+            <span className="block text-2xl font-extrabold text-slate-800">{summary?.by_status?.['In Progress'] || 92}</span>
+            <span className="text-[9px] text-slate-500 font-semibold">{summary?.by_status?.Reported || 78} Pending</span>
           </div>
         </div>
 
@@ -146,7 +175,7 @@ export default function AdminDashboard() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pt-1 leading-none">
-                <span className="text-xl font-extrabold text-slate-800">4,892</span>
+                <span className="text-xl font-extrabold text-slate-800">{totalReportsCount}</span>
                 <span className="text-[8px] text-slate-400 font-bold uppercase mt-0.5">Hazards</span>
               </div>
             </div>
@@ -155,7 +184,7 @@ export default function AdminDashboard() {
               {severityData.map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />{item.name}</span>
-                  <span className="text-slate-850">{item.value} ({((item.value/4892)*100).toFixed(1)}%)</span>
+                  <span className="text-slate-850">{item.value} ({totalReportsCount > 0 ? ((item.value/totalReportsCount)*100).toFixed(1) : 0}%)</span>
                 </div>
               ))}
             </div>
@@ -273,7 +302,7 @@ export default function AdminDashboard() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pt-1 leading-none">
-                <span className="text-xl font-extrabold text-slate-800">245</span>
+                <span className="text-xl font-extrabold text-slate-800">{totalTasks}</span>
                 <span className="text-[8px] text-slate-400 font-bold uppercase mt-0.5">Total Tasks</span>
               </div>
             </div>
@@ -282,7 +311,7 @@ export default function AdminDashboard() {
               {maintenanceData.map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between border-b border-slate-50 pb-1.5 last:border-0 last:pb-0">
                   <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />{item.name}</span>
-                  <span className="text-slate-850">{item.value} ({((item.value/245)*100).toFixed(1)}%)</span>
+                  <span className="text-slate-850">{item.value} ({totalTasks > 0 ? ((item.value/totalTasks)*100).toFixed(1) : 0}%)</span>
                 </div>
               ))}
             </div>

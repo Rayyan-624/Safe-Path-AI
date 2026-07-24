@@ -1,95 +1,66 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockHazards } from '../../data/mockData';
 import {
   IoWarningOutline, IoShieldOutline, IoPulseOutline, IoCheckmarkCircleOutline,
   IoSearchOutline, IoFunnelOutline, IoCalendarOutline, IoChevronForwardOutline,
   IoEllipsisVerticalOutline, IoAddCircleOutline
 } from 'react-icons/io5';
+import { useHazards } from '../../context/HazardContext';
 
 export default function AdminHazardManagement() {
   const navigate = useNavigate();
-
+  const { hazards, updateHazardStatus } = useHazards();
+  
   const [search, setSearch] = useState('');
   const [activeStatus, setActiveStatus] = useState('All');
+  const [editingId, setEditingId] = useState(null);
 
-  const adminHazards = [
-    {
-      id: "HZ-2024-05-18-1023",
-      type: "Pothole",
-      desc: "Large pothole in the middle of Shahrah-e-Faisal",
-      severity: "Critical",
-      severityColor: "bg-red-50 text-red-600 border-red-100",
-      confidence: "92%",
-      usersPassed: 28,
-      usersTotal: 30,
-      avatars: ["https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50"],
-      avatarCount: 18,
-      status: "Under Review",
-      statusColor: "bg-yellow-50 text-yellow-600 border-yellow-100",
-      photo: "https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=100&auto=format&fit=crop"
-    },
-    {
-      id: "HZ-2024-05-18-1024",
-      type: "Road Crack",
-      desc: "Severe cracks on Korangi Road",
-      severity: "Moderate",
-      severityColor: "bg-orange-50 text-orange-500 border-orange-100",
-      confidence: "85%",
-      usersPassed: 15,
-      usersTotal: 22,
-      avatars: ["https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=50", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50"],
-      avatarCount: 7,
-      status: "Pending",
-      statusColor: "bg-orange-50 text-orange-500 border-orange-100",
-      photo: "https://images.unsplash.com/photo-1584467541268-b040f83be3fd?w=100&auto=format&fit=crop"
-    },
-    {
-      id: "HZ-2024-05-18-1025",
-      type: "Road Construction",
-      desc: "Unmarked construction near University Road",
-      severity: "Moderate",
-      severityColor: "bg-orange-50 text-orange-500 border-orange-100",
-      confidence: "88%",
-      usersPassed: 8,
-      usersTotal: 15,
-      avatars: ["https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=50", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=50"],
-      avatarCount: 3,
-      status: "Work In Progress",
-      statusColor: "bg-blue-50 text-blue-600 border-blue-100",
-      photo: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=100&auto=format&fit=crop"
-    },
-    {
-      id: "HZ-2024-05-18-1026",
-      type: "Open Manhole",
-      desc: "Open manhole on Clifton Beach road",
-      severity: "Critical",
-      severityColor: "bg-red-50 text-red-600 border-red-100",
-      confidence: "90%",
-      usersPassed: 22,
-      usersTotal: 25,
-      avatars: ["https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=50", "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=50"],
-      avatarCount: 12,
-      status: "Resolved",
-      statusColor: "bg-green-50 text-green-700 border-green-100",
-      photo: "https://images.unsplash.com/photo-1508873696983-2df519f0397e?w=100&auto=format&fit=crop"
-    },
-    {
-      id: "HZ-2024-05-18-1027",
-      type: "Flooded Road",
-      desc: "Severe water logging near Stadium",
-      severity: "High",
-      severityColor: "bg-red-50 text-red-600 border-red-100",
-      confidence: "95%",
-      usersPassed: 38,
-      usersTotal: 40,
-      avatars: ["https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?w=50", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50"],
-      avatarCount: 25,
-      status: "Under Review",
-      statusColor: "bg-yellow-50 text-yellow-600 border-yellow-100",
-      photo: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=100&auto=format&fit=crop"
+  const getSeverityStyle = (severity) => {
+    switch (severity) {
+      case 'Critical':
+        return 'bg-red-50 text-red-600 border-red-100';
+      case 'Moderate':
+        return 'bg-orange-50 text-orange-500 border-orange-100';
+      default:
+        return 'bg-yellow-50 text-yellow-600 border-yellow-100';
     }
-  ];
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'Resolved':
+        return 'bg-green-50 text-green-700 border-green-100';
+      case 'In Progress':
+        return 'bg-blue-50 text-blue-600 border-blue-100';
+      case 'Acknowledged':
+        return 'bg-yellow-50 text-yellow-600 border-yellow-100';
+      case 'Dismissed':
+        return 'bg-slate-50 text-slate-500 border-slate-100';
+      default:
+        return 'bg-orange-50 text-orange-500 border-orange-100';
+    }
+  };
+
+  const activeAdminHazards = hazards.map(h => ({
+    id: h.id,
+    type: h.hazard_type,
+    desc: `${h.hazard_type} detected at [${h.latitude.toFixed(4)}, ${h.longitude.toFixed(4)}]`,
+    severity: h.severity,
+    severityColor: getSeverityStyle(h.severity),
+    confidence: `${Math.round(h.confidence * 100)}%`,
+    usersPassed: h.crowdsource_count,
+    usersTotal: h.crowdsource_count + 3,
+    avatars: [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=50",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50"
+    ],
+    avatarCount: Math.max(0, h.crowdsource_count - 2),
+    status: h.status,
+    statusColor: getStatusStyle(h.status),
+    photo: "https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=100&auto=format&fit=crop"
+  }));
+
+  const displayHazards = activeAdminHazards.length > 0 ? activeAdminHazards : [];
 
   return (
     <div className="space-y-6 text-left font-sans">
@@ -210,8 +181,8 @@ export default function AdminHazardManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
-            {adminHazards.map((haz) => (
-              <tr key={haz.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer" onClick={() => navigate('/driver/hazard/HZ-2024-05-18-1023')}>
+            {displayHazards.map((haz) => (
+              <tr key={haz.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer" onClick={() => navigate(`/driver/hazard/${haz.id}`)}>
                 <td className="p-4 pl-6" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500 border-slate-300 w-4 h-4" /></td>
                 
                 {/* Details */}
@@ -222,7 +193,7 @@ export default function AdminHazardManagement() {
                   <div className="space-y-1 text-left leading-tight">
                     <div className="flex items-center gap-1.5">
                       <span className="font-extrabold text-slate-800 text-xs block group-hover:text-blue-600 transition-colors">{haz.type}</span>
-                      <span className="text-[9px] text-slate-400 font-semibold">{haz.id}</span>
+                      <span className="text-[9px] text-slate-400 font-semibold">{haz.id.substring(0, 8)}...</span>
                     </div>
                     <p className="text-[10px] text-slate-400 font-semibold">{haz.desc}</p>
                   </div>
@@ -257,16 +228,38 @@ export default function AdminHazardManagement() {
                 </td>
 
                 {/* Status */}
-                <td className="p-4">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider border ${haz.statusColor}`}>
-                    {haz.status}
-                  </span>
+                <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                  {editingId === haz.id ? (
+                    <select
+                      value={haz.status}
+                      onChange={(e) => {
+                        updateHazardStatus(haz.id, e.target.value);
+                        setEditingId(null);
+                      }}
+                      className="p-1 border border-slate-200 rounded text-[10px] bg-white text-slate-800 focus:outline-none font-bold"
+                    >
+                      <option value="Reported">Reported</option>
+                      <option value="Acknowledged">Acknowledged</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Resolved">Resolved</option>
+                      <option value="Dismissed">Dismissed</option>
+                    </select>
+                  ) : (
+                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider border ${haz.statusColor}`}>
+                      {haz.status}
+                    </span>
+                  )}
                 </td>
 
                 {/* Actions */}
                 <td className="p-4 pr-6" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-2.5">
-                    <button className="text-xs font-bold text-blue-600 hover:underline">Edit</button>
+                    <button
+                      onClick={() => setEditingId(editingId === haz.id ? null : haz.id)}
+                      className="text-xs font-bold text-blue-600 hover:underline"
+                    >
+                      {editingId === haz.id ? 'Cancel' : 'Edit'}
+                    </button>
                     <button className="text-slate-350 hover:text-slate-500 focus:outline-none"><IoEllipsisVerticalOutline className="w-4 h-4" /></button>
                   </div>
                 </td>

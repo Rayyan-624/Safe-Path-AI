@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { IoChevronUpOutline, IoChevronDownOutline, IoShieldCheckmarkOutline, IoSpeedometerOutline, IoBusinessOutline } from 'react-icons/io5';
+import { useAuth } from '../context/AuthContext';
 
 export default function RoleSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
 
   const screens = [
     { name: "1. Landing Page", path: "/" },
@@ -63,7 +65,12 @@ export default function RoleSwitcher() {
               return (
                 <button
                   key={idx}
-                  onClick={() => {
+                  onClick={async () => {
+                    if (scr.path.startsWith('/admin')) {
+                      try { await login('mock-admin-token'); } catch (e) {}
+                    } else if (scr.path.startsWith('/driver')) {
+                      try { await login('mock-driver-token'); } catch (e) {}
+                    }
                     navigate(scr.path);
                     setIsOpen(false);
                   }}

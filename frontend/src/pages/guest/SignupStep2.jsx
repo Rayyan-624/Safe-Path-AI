@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IoShieldCheckmarkOutline, IoMapOutline, IoCameraOutline, IoPulseOutline, IoCompassOutline, IoNotificationsOutline, IoLockClosedOutline } from 'react-icons/io5';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SignupStep2() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [perms, setPerms] = useState({
     gps: true,
@@ -18,8 +20,11 @@ export default function SignupStep2() {
   };
 
   const handleContinue = () => {
-    // Navigate straight to the Driver Dashboard route
-    navigate('/driver/dashboard');
+    if (user?.role === 'admin') {
+      navigate('/admin/dashboard');
+    } else {
+      navigate('/driver/dashboard');
+    }
   };
 
   return (

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { mockHazards } from '../../data/mockData';
 import MapPlaceholder from '../../components/MapPlaceholder';
 import { IoSearchOutline, IoRefreshOutline, IoFunnelOutline, IoCheckmarkCircleOutline } from 'react-icons/io5';
+import { useHazards } from '../../context/HazardContext';
 
 export default function DriverLiveMap() {
+  const { geojson, loading } = useHazards();
   const [searchQuery, setSearchQuery] = useState('');
   const [hazardFilters, setHazardFilters] = useState({
     Potholes: true,
@@ -23,8 +25,24 @@ export default function DriverLiveMap() {
     setRiskLevel('All');
   };
 
+  // Convert GeoJSON to standard hazard structure
+  const rawHazards = geojson?.features?.map(f => ({
+    id: f.properties.hazard_id,
+    type: f.properties.hazard_type,
+    severity: f.properties.severity,
+    confidence: f.properties.confidence,
+    lat: f.geometry.coordinates[1],
+    lng: f.geometry.coordinates[0],
+    crowdsource_count: f.properties.crowdsource_count,
+    is_verified: f.properties.is_verified,
+    status: f.properties.status,
+    created_at: f.properties.created_at
+  })) || [];
+
+  const activeHazardsList = rawHazards.length > 0 ? rawHazards : mockHazards;
+
   // Filter hazards
-  const filteredHazards = mockHazards.filter(h => {
+  const filteredHazards = activeHazardsList.filter(h => {
     // Hazard type filtering
     if (h.type === 'Pothole' && !hazardFilters.Potholes) return false;
     if (h.type === 'Road Crack' && !hazardFilters.Cracks) return false;

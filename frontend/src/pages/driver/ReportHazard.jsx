@@ -5,21 +5,85 @@ import {
   IoCameraOutline, IoLocationOutline, IoWarningOutline, IoPulseOutline,
   IoDocumentTextOutline, IoArrowBackOutline, IoPaperPlaneOutline
 } from 'react-icons/io5';
+import { useHazards as useHazardAPI } from '../../context/HazardContext';
 
 export default function DriverReportHazard() {
   const navigate = useNavigate();
+  const { reportHazard } = useHazardAPI();
 
   // Form states
   const [mediaUploaded, setMediaUploaded] = useState(true);
+  const [imageBlob, setImageBlob] = useState(null);
+  const [imagePreview, setImagePreview] = useState('https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=600&auto=format&fit=crop&q=80');
   const [locationName, setLocationName] = useState('Shahrah-e-Faisal, Near Teen Hatti, Karachi, Pakistan');
   const [latLng, setLatLng] = useState({ lat: 24.8607, lng: 67.0099 });
   const [hazardType, setHazardType] = useState('Pothole');
   const [severity, setSeverity] = useState('Critical');
   const [notes, setNotes] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleUseCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLatLng({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          setLocationName(`Current Location: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`);
+        },
+        (error) => {
+          console.error(error);
+          alert('Could not retrieve current coordinates.');
+        }
+      );
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+        setImageBlob(reader.result); // contains base64 format data URI
+        setMediaUploaded(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/driver/report-success');
+    try {
+      // Map UI choices to backend HazardType strings
+      let mappedType = hazardType;
+      if (hazardType === 'Crack') mappedType = 'Road Crack';
+      if (hazardType === 'Flood') mappedType = 'Flooded Road';
+
+      // Map severity
+      let mappedSeverity = 'Minor';
+      if (severity === 'Moderate') mappedSeverity = 'Moderate';
+      if (severity === 'Major' || severity === 'Critical') mappedSeverity = 'Critical';
+
+      const sensorPayload = {
+        latitude: latLng.lat,
+        longitude: latLng.lng,
+        accelerometer_x: 0.8,
+        accelerometer_y: -0.4,
+        accelerometer_z: severity === 'Critical' ? 14.8 : severity === 'Major' ? 12.2 : 9.8,
+        gyroscope_x: 0.1,
+        gyroscope_y: 0.05,
+        gyroscope_z: 0.15,
+        speed_kmh: 50.0,
+        image_base64: imageBlob
+      };
+
+      await reportHazard(sensorPayload);
+      navigate('/driver/report-success');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to report hazard. Check console for error details.');
+    }
   };
 
   return (
@@ -51,22 +115,33 @@ export default function DriverReportHazard() {
           <div className="space-y-2">
             <span className="text-xs font-extrabold text-slate-800">1. Upload Image / Video</span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors">
+              <label htmlFor="file-upload" className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors">
                 <IoCameraOutline className="w-8 h-8 text-slate-400 mb-2" />
-                <span className="text-xs font-bold text-slate-700">Drag & drop image or video</span>
-                <span className="text-[10px] text-slate-400 mt-1">PNG, JPG, MP4 up to 20MB</span>
-              </div>
+                <span className="text-xs font-bold text-slate-700">Click to upload image</span>
+                <span className="text-[10px] text-slate-400 mt-1">PNG, JPG up to 20MB</span>
+                <input
+                  type="file"
+                  id="file-upload"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
               
               {mediaUploaded ? (
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200 h-36 group">
                   <img
-                    src="https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=600&auto=format&fit=crop&q=80"
+                    src={imagePreview}
                     alt="Upload preview"
                     className="w-full h-full object-cover"
                   />
                   <button
                     type="button"
-                    onClick={() => setMediaUploaded(false)}
+                    onClick={() => {
+                      setMediaUploaded(false);
+                      setImageBlob(null);
+                      setImagePreview('https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=600&auto=format&fit=crop&q=80');
+                    }}
                     className="absolute top-2 right-2 p-1 bg-black/60 rounded-full text-white text-xs hover:bg-black focus:outline-none"
                   >
                     ✕
@@ -95,6 +170,7 @@ export default function DriverReportHazard() {
               />
               <button
                 type="button"
+                onClick={handleUseCurrentLocation}
                 className="absolute inset-y-1.5 right-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-[10px] font-bold focus:outline-none"
               >
                 Use Current Location
