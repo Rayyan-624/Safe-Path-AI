@@ -407,6 +407,45 @@ async def get_geojson(
 
 
 # ---------------------------------------------------------------------------
+# GET /hazards/reports/export  (admin)  — MUST be before /{hazard_id}
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/reports/export",
+    response_model=ReportSummary,
+    status_code=status.HTTP_200_OK,
+    summary="Admin: export all hazard reports as a bundle",
+    description=(
+        "Returns a paginated bundle of hazard reports.  Must be registered "
+        "before /{hazard_id} to avoid being shadowed by the dynamic route."
+    ),
+)
+async def export_reports(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(200, ge=1, le=1000),
+    severity: Optional[str] = Query(None),
+    hazard_type: Optional[str] = Query(None),
+    repair_status: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> ReportSummary:
+    stmt = select(HazardReport)
+    if severity:
+        stmt = stmt.where(HazardReport.severity == severity)
+    if hazard_type:
+        stmt = stmt.where(HazardReport.hazard_type == hazard_type)
+    if repair_status:
+        stmt = stmt.where(HazardReport.status == repair_status)
+    stmt = stmt.order_by(HazardReport.created_at.desc()).offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    hazards = result.scalars().all()
+    return ReportSummary(
+        total=len(hazards),
+        hazards=[HazardListItem.model_validate(h) for h in hazards],
+    )
+
+
+# ---------------------------------------------------------------------------
 # PUT /hazards/{hazard_id}/status  (admin)
 # ---------------------------------------------------------------------------
 
@@ -436,7 +475,7 @@ async def update_hazard_status(
     hazard.status = body.status
     hazard.updated_at = datetime.now(timezone.utc)
 
-    logger.info("Admin updated hazard %s status → %s", hazard_id, body.status)
+    logger.info("Admin updated hazard %s status -> %s", hazard_id, body.status)
     return HazardListItem.model_validate(hazard)
 
 
@@ -493,38 +532,3 @@ async def delete_hazard(
     await db.delete(hazard)
     logger.info("Admin deleted hazard %s", hazard_id)
     return MessageResponse(message=f"Hazard '{hazard_id}' has been deleted.")
-
-
-# ---------------------------------------------------------------------------
-# GET /hazards/reports  — named reports endpoint
-# ---------------------------------------------------------------------------
-
-@router.get(
-    "/reports/export",
-    response_model=ReportSummary,
-    status_code=status.HTTP_200_OK,
-    summary="Admin: export all hazard reports as a bundle",
-)
-async def export_reports(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(200, ge=1, le=1000),
-    severity: Optional[str] = Query(None),
-    hazard_type: Optional[str] = Query(None),
-    repair_status: Optional[str] = Query(None),
-    db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_admin),
-) -> ReportSummary:
-    stmt = select(HazardReport)
-    if severity:
-        stmt = stmt.where(HazardReport.severity == severity)
-    if hazard_type:
-        stmt = stmt.where(HazardReport.hazard_type == hazard_type)
-    if repair_status:
-        stmt = stmt.where(HazardReport.status == repair_status)
-    stmt = stmt.order_by(HazardReport.created_at.desc()).offset(skip).limit(limit)
-    result = await db.execute(stmt)
-    hazards = result.scalars().all()
-    return ReportSummary(
-        total=len(hazards),
-        hazards=[HazardListItem.model_validate(h) for h in hazards],
-    )
