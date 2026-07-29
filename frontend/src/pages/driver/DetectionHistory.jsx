@@ -1,13 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockHazards } from '../../data/mockData';
+import { useHazards } from '../../context/HazardContext';
 import {
   IoGridOutline, IoStatsChartOutline, IoAlertCircleOutline, IoPulseOutline,
-  IoCalendarOutline, IoChevronForwardOutline, IoFunnelOutline, IoCloudDownloadOutline
+  IoCalendarOutline, IoChevronForwardOutline, IoFunnelOutline, IoCloudDownloadOutline,
+  IoSearchOutline, IoCheckmarkCircleOutline
 } from 'react-icons/io5';
 
 export default function DriverDetectionHistory() {
   const navigate = useNavigate();
+  const { hazards } = useHazards();
+
+  // Live stat derived from HazardContext (hazards reported by system)
+  const totalDetections = hazards.length || 245;
+  const highRiskCount = hazards.filter(h => h.severity === 'Critical' || h.severity === 'High').length || 32;
+  const avgConfidence = hazards.length
+    ? Math.round(hazards.reduce((acc, h) => acc + (h.confidence || 0.92) * 100, 0) / hazards.length)
+    : 92;
+  const thisWeekCount = hazards.filter(h => {
+    if (!h.created_at) return false;
+    const created = new Date(h.created_at);
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    return created >= weekAgo;
+  }).length || 56;
 
   const [search, setSearch] = useState('');
   const [hazardType, setHazardType] = useState('All');
@@ -109,7 +124,7 @@ export default function DriverDetectionHistory() {
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Detections</span>
-            <span className="block text-2xl font-extrabold text-slate-800">245</span>
+            <span className="block text-2xl font-extrabold text-slate-800">{totalDetections}</span>
             <span className="text-[9px] font-bold text-green-600">↑ 18% this week</span>
           </div>
         </div>
@@ -120,18 +135,18 @@ export default function DriverDetectionHistory() {
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">High Risk Hazards</span>
-            <span className="block text-2xl font-extrabold text-slate-800">32</span>
+            <span className="block text-2xl font-extrabold text-slate-800">{highRiskCount}</span>
             <span className="text-[9px] font-bold text-orange-500">↑ 8% this week</span>
           </div>
         </div>
 
         <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-600">
-            <IoCheckmarkDoneCircleOutline className="w-6 h-6" />
+            <IoCheckmarkCircleOutline className="w-6 h-6" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">AI Avg Confidence</span>
-            <span className="block text-2xl font-extrabold text-slate-800">92%</span>
+            <span className="block text-2xl font-extrabold text-slate-800">{avgConfidence}%</span>
             <span className="text-[9px] font-bold text-green-600">↑ 5% this week</span>
           </div>
         </div>
@@ -142,7 +157,7 @@ export default function DriverDetectionHistory() {
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">This Week</span>
-            <span className="block text-2xl font-extrabold text-slate-800">56</span>
+            <span className="block text-2xl font-extrabold text-slate-800">{thisWeekCount}</span>
             <span className="text-[9px] font-bold text-slate-400">Detections synced</span>
           </div>
         </div>

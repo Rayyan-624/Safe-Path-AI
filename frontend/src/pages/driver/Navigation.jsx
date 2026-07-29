@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import MapPlaceholder from '../../components/MapPlaceholder';
-import { mockHazards } from '../../data/mockData';
+import { useHazards } from '../../context/HazardContext';
 import {
   IoSwapVerticalOutline, IoShieldCheckmarkOutline, IoTimeOutline, IoConstructOutline,
   IoAlertCircleOutline, IoVolumeHighOutline, IoCloseOutline, IoCloseCircleOutline
@@ -10,7 +10,21 @@ import {
 export default function DriverNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
-  
+  const { geojson } = useHazards();
+
+  // Convert GeoJSON to hazard objects for the navigation map
+  const liveMapHazards = geojson?.features?.slice(0, 5).map(f => ({
+    id: f.properties.hazard_id,
+    type: f.properties.hazard_type,
+    severity: f.properties.severity,
+    lat: f.geometry.coordinates[1],
+    lng: f.geometry.coordinates[0],
+    confidence: f.properties.confidence,
+    crowdsource_count: f.properties.crowdsource_count,
+    is_verified: f.properties.is_verified,
+    status: f.properties.status,
+  })) || [];
+
   // Navigation states
   const [fromLoc, setFromLoc] = useState('Shahrah-e-Faisal, Karachi');
   const [toLoc, setToLoc] = useState('NIPA Chowrangi, Karachi');
@@ -160,7 +174,7 @@ export default function DriverNavigation() {
           </div>
 
           <div className="w-full h-96 rounded-2xl overflow-hidden relative border border-slate-100 shadow-inner">
-            <MapPlaceholder hazards={mockHazards.slice(0, 3)} mode="user" />
+            <MapPlaceholder hazards={liveMapHazards} mode="user" />
           </div>
         </div>
 

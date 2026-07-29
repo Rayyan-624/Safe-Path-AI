@@ -1,6 +1,6 @@
 import React from 'react';
 import MapPlaceholder from '../../components/MapPlaceholder';
-import { mockHazards } from '../../data/mockData';
+import { useHazards } from '../../context/HazardContext';
 import {
   IoPulseOutline, IoTrendingUpOutline, IoTimeOutline, IoCheckmarkCircleOutline,
   IoAlertCircleOutline, IoCalendarOutline, IoChevronForwardOutline, IoShieldCheckmarkOutline
@@ -8,7 +8,23 @@ import {
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 
 export default function AdminRoadPrediction() {
-  
+  const { geojson } = useHazards();
+
+  // Convert GeoJSON to hazard objects for deterioration map
+  const mapHazards = geojson?.features?.slice(0, 5).map(f => ({
+    id: f.properties.hazard_id,
+    type: f.properties.hazard_type,
+    severity: f.properties.severity,
+    lat: f.geometry.coordinates[1],
+    lng: f.geometry.coordinates[0],
+    confidence: f.properties.confidence,
+    crowdsource_count: f.properties.crowdsource_count,
+    is_verified: f.properties.is_verified,
+    status: f.properties.status,
+  })) || [];
+
+  // TODO [Week 5+]: Replace with real ML predictions from /ai/predictions endpoint.
+  // Current predictions are illustrative UI placeholders only.
   const predictions = [
     { id: "PRD-01", type: "Pothole Collapse Risk", loc: "Shahrah-e-Faisal, Karachi", timeline: "15 Days", prob: "85%", risk: "High Risk", riskColor: "bg-red-50 text-red-600 border-red-100" },
     { id: "PRD-02", type: "Longitudinal Cracking", loc: "Korangi Road, Karachi", timeline: "30 Days", prob: "72%", risk: "Medium Risk", riskColor: "bg-orange-50 text-orange-500 border-orange-100" },
@@ -76,7 +92,7 @@ export default function AdminRoadPrediction() {
         <div className="lg:col-span-2 bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-[380px]">
           <span className="text-xs font-extrabold text-slate-800 border-b border-slate-50 pb-2 block">Deterioration Forecasting Map</span>
           <div className="w-full h-72 rounded-2xl overflow-hidden border border-slate-150 relative">
-            <MapPlaceholder hazards={mockHazards.slice(0, 3)} mode="admin" />
+            <MapPlaceholder hazards={mapHazards} mode="admin" />
           </div>
         </div>
 

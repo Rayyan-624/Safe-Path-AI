@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { mockHazards } from '../../data/mockData';
 import { useHazards } from '../../context/HazardContext';
 import {
   IoShareOutline, IoBookmarkOutline, IoPersonOutline, IoShieldCheckmarkOutline,
@@ -13,24 +12,48 @@ export default function DriverHazardDetails() {
   const { id } = useParams();
   const { hazards } = useHazards();
 
-  // Selected Hazard Info from Backend context, fallback to mock
-  const backendHazard = hazards.find(h => h.id === id);
+  // TODO [Week 5+]: Photos and comments require dedicated /hazards/{id}/images
+  // and /hazards/{id}/comments endpoints (image storage + comment model).
+  // Using static fallback data until those endpoints are built.
+  const FALLBACK_PHOTOS = [
+    "https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=600&auto=format&fit=crop&q=80",
+    "https://images.unsplash.com/photo-1621259182978-f09e5e2ae091?w=600&auto=format&fit=crop&q=80"
+  ];
+  const FALLBACK_COMMENTS = [
+    { user: "Usman Khan", role: "Driver", text: "Still there. Got a flat tire because of this.", time: "18 May 2024, 11:02 AM", verified: true },
+    { user: "Ayesha Malik", role: "Driver", text: "Very dangerous for motorcyclists in the evening.", time: "18 May 2024, 02:15 PM", verified: false }
+  ];
+
+  // Selected Hazard Info from Backend context, fallback to empty placeholder
+  const backendHazard = hazards.find(h => String(h.hazard_id) === String(id) || String(h.id) === String(id));
   const hazard = backendHazard ? {
-    id: backendHazard.id,
+    id: backendHazard.hazard_id || backendHazard.id,
     type: backendHazard.hazard_type,
     severity: backendHazard.severity,
-    location: `Shahrah-e-Faisal [${backendHazard.latitude.toFixed(4)}, ${backendHazard.longitude.toFixed(4)}]`,
-    confidence: Math.round(backendHazard.confidence * 100),
-    reportedBy: "Ali Haider",
-    reportedOn: new Date(backendHazard.created_at).toLocaleDateString(),
-    verifiedCount: backendHazard.crowdsource_count,
+    location: `Lat ${backendHazard.latitude?.toFixed(4) ?? '?'}, Lng ${backendHazard.longitude?.toFixed(4) ?? '?'}`,
+    confidence: Math.round((backendHazard.confidence || 0.92) * 100),
+    reportedBy: backendHazard.user_name || "SafePath Driver",
+    reportedOn: backendHazard.created_at ? new Date(backendHazard.created_at).toLocaleDateString() : '—',
+    verifiedCount: backendHazard.crowdsource_count || 0,
     modelName: "CNN-LSTM v1.4",
-    description: `AI-detected ${backendHazard.hazard_type} with ${backendHazard.severity} severity on Shahrah-e-Faisal. Verified by ${backendHazard.crowdsource_count} drivers.`,
-    photos: backendHazard.image_path ? [`http://localhost:8000/${backendHazard.image_path}`] : mockHazards[0].photos,
-    comments: mockHazards[0].comments
+    description: `AI-detected ${backendHazard.hazard_type} with ${backendHazard.severity} severity. Verified by ${backendHazard.crowdsource_count || 0} drivers.`,
+    // TODO [Week 5+]: Replace FALLBACK_PHOTOS with real image from backendHazard.image_path
+    photos: backendHazard.image_path ? [`http://localhost:8000/${backendHazard.image_path}`] : FALLBACK_PHOTOS,
+    // TODO [Week 5+]: Replace FALLBACK_COMMENTS with live comments from /hazards/{id}/comments
+    comments: FALLBACK_COMMENTS,
   } : {
-    ...mockHazards[0],
-    id: id || mockHazards[0].id
+    id: id || 'UNKNOWN',
+    type: 'Pothole',
+    severity: 'Unknown',
+    location: 'Location not found — hazard may have been removed.',
+    confidence: 0,
+    reportedBy: '—',
+    reportedOn: '—',
+    verifiedCount: 0,
+    modelName: '—',
+    description: 'This hazard could not be found. It may have been resolved or removed.',
+    photos: FALLBACK_PHOTOS,
+    comments: FALLBACK_COMMENTS,
   };
 
   const [photoIndex, setPhotoIndex] = useState(0);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import MapPlaceholder from '../../components/MapPlaceholder';
-import { mockHazards } from '../../data/mockData';
+import { useHazards } from '../../context/HazardContext';
 import {
   IoPulseOutline, IoCheckmarkCircleOutline, IoWifiOutline, IoThermometerOutline,
   IoSettingsOutline, IoStatsChartOutline, IoConstructOutline, IoHardwareChipOutline
@@ -8,6 +8,23 @@ import {
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 
 export default function AdminSmartCity() {
+  const { geojson } = useHazards();
+
+  // Convert GeoJSON to hazard objects for the digital twin map
+  const mapHazards = geojson?.features?.map(f => ({
+    id: f.properties.hazard_id,
+    type: f.properties.hazard_type,
+    severity: f.properties.severity,
+    lat: f.geometry.coordinates[1],
+    lng: f.geometry.coordinates[0],
+    confidence: f.properties.confidence,
+    crowdsource_count: f.properties.crowdsource_count,
+    is_verified: f.properties.is_verified,
+    status: f.properties.status,
+  })) || [];
+
+  // TODO [Week 5+]: IoT device statuses below are illustrative placeholders.
+  // Real device data will come from /iot/sensors endpoint.
   const [controls, setControls] = useState({
     lights: true,
     floods: true,
@@ -83,7 +100,7 @@ export default function AdminSmartCity() {
         <div className="lg:col-span-2 bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-[380px]">
           <span className="text-xs font-extrabold text-slate-800 border-b border-slate-50 pb-2 block">Digital Twin Road Grid</span>
           <div className="w-full h-72 rounded-2xl overflow-hidden border border-slate-150 relative">
-            <MapPlaceholder hazards={mockHazards} mode="admin" />
+            <MapPlaceholder hazards={mapHazards} mode="admin" />
           </div>
         </div>
 
