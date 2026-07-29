@@ -209,14 +209,26 @@ export default function DriverNavigation() {
 
             {/* Bottom route summary & Action button */}
             <div className="border-t border-slate-100 pt-3 space-y-3">
-              <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold text-slate-500">
-                <div className="bg-slate-50 p-2 rounded-xl">
-                  <span className="block text-[8px] text-slate-400 uppercase tracking-wider">ETA</span>
-                  <span className="text-slate-800">24 min</span>
+              <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-bold text-slate-500">
+                <div className="bg-slate-50 p-2 rounded-xl flex flex-col items-center justify-center">
+                  <span className="text-xs mb-0.5">⏱️</span>
+                  <span className="text-slate-800 font-extrabold text-[11px] block">24 min</span>
+                  <span className="text-[8px] text-slate-400 font-medium">ETA 10:24</span>
                 </div>
-                <div className="bg-slate-50 p-2 rounded-xl">
-                  <span className="block text-[8px] text-slate-400 uppercase tracking-wider">Distance</span>
-                  <span className="text-slate-800">12.4 km</span>
+                <div className="bg-slate-50 p-2 rounded-xl flex flex-col items-center justify-center">
+                  <span className="text-xs mb-0.5">🛣️</span>
+                  <span className="text-slate-800 font-extrabold text-[11px] block">12.4 km</span>
+                  <span className="text-[8px] text-slate-400 font-medium">Distance</span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded-xl flex flex-col items-center justify-center">
+                  <span className="text-xs mb-0.5">⚠️</span>
+                  <span className="text-red-500 font-extrabold text-[11px] block">3</span>
+                  <span className="text-[8px] text-slate-400 font-medium">Hazards</span>
+                </div>
+                <div className="bg-slate-50 p-2 rounded-xl flex flex-col items-center justify-center">
+                  <span className="text-xs mb-0.5">🏎️</span>
+                  <span className="text-slate-800 font-extrabold text-[11px] block">48 km/h</span>
+                  <span className="text-[8px] text-slate-400 font-medium">Speed</span>
                 </div>
               </div>
 

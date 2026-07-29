@@ -46,16 +46,37 @@ export default function SignupStep1() {
           </div>
         </div>
 
-        {/* Heading */}
-        <div className="relative z-10 space-y-4 max-w-md my-auto">
-          <h2 className="text-4xl font-extrabold leading-tight">
-            Join the movement <br />
-            for <span className="text-blue-500">safer roads</span> and <br />
-            <span className="text-green-500">smarter cities</span>
-          </h2>
-          <p className="text-slate-300 text-sm leading-relaxed">
-            Create your account and help build a real-time road safety ecosystem powered by AI and community data.
-          </p>
+        {/* Heading & Checklist */}
+        <div className="relative z-10 space-y-6 max-w-md my-auto text-left">
+          <div>
+            <h2 className="text-4xl font-extrabold leading-tight">
+              Join the movement <br />
+              for <span className="text-blue-500">safer roads</span> and <br />
+              <span className="text-green-500">smarter cities</span>
+            </h2>
+            <p className="text-slate-300 text-xs mt-3 leading-relaxed">
+              Create your account and help build a real-time road safety ecosystem powered by AI and community data.
+            </p>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            {[
+              { title: "Real-time Detection", desc: "AI detects hazards instantly", icon: "⚙️", color: "bg-blue-500/20 text-blue-400" },
+              { title: "Community Driven", desc: "Stronger together", icon: "👥", color: "bg-green-500/20 text-green-400" },
+              { title: "Smart Alerts", desc: "Timely warnings keep you safe", icon: "🔔", color: "bg-amber-500/20 text-amber-400" },
+              { title: "Data-Driven Insights", desc: "Helping cities make better decisions", icon: "📊", color: "bg-purple-500/20 text-purple-400" }
+            ].map((feat, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${feat.color}`}>
+                  {feat.icon}
+                </div>
+                <div className="leading-tight">
+                  <span className="block text-xs font-bold text-white">{feat.title}</span>
+                  <span className="block text-[10px] text-slate-400 font-semibold mt-0.5">{feat.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Already have an account footer card */}

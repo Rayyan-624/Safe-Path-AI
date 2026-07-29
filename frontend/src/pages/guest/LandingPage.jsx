@@ -13,8 +13,58 @@ export default function LandingPage() {
 
   return (
     <div className="bg-slate-50 font-sans min-h-screen">
+      {/* Top Navbar */}
+      <header className="border-b border-slate-100 bg-white/80 backdrop-blur sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          {/* Logo / Branding */}
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md">
+              <IoShieldCheckmarkOutline className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-left leading-tight">
+              <span className="font-extrabold text-sm text-slate-800 block">SafePath AI</span>
+              <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-wider">Smarter Roads, Safer Lives</span>
+            </div>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-600">
+            <span className="text-blue-600 hover:text-blue-700 cursor-pointer transition-colors relative after:absolute after:bottom-[-20px] after:left-0 after:right-0 after:h-[3px] after:bg-blue-600 after:rounded-full">Home</span>
+            <span className="hover:text-blue-600 cursor-pointer transition-colors">Features</span>
+            <span className="hover:text-blue-600 cursor-pointer transition-colors">How It Works</span>
+            <span className="hover:text-blue-600 cursor-pointer transition-colors">For Municipalities</span>
+            <span className="hover:text-blue-600 cursor-pointer transition-colors">Resources</span>
+            <span className="hover:text-blue-600 cursor-pointer transition-colors">About Us</span>
+          </nav>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3">
+            {/* Language dropdown */}
+            <div className="flex items-center gap-1.5 px-3 py-2 border border-slate-100 rounded-xl bg-slate-50 text-[10px] font-bold text-slate-600 cursor-pointer select-none">
+              <span className="text-xs">🌐</span>
+              <span>EN</span>
+              <span className="text-[8px] opacity-60">▼</span>
+            </div>
+
+            <button
+              onClick={() => navigate('/login')}
+              className="px-4 py-2 border border-blue-100 text-blue-600 font-bold rounded-xl text-xs hover:bg-blue-50/20 active:scale-95 transition-all focus:outline-none cursor-pointer"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => navigate('/signup')}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md hover:shadow-blue-500/10 active:scale-95 transition-all focus:outline-none flex items-center gap-1 cursor-pointer"
+            >
+              <span>Get Started</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 px-6 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12">
+      <section className="relative overflow-hidden py-16 px-6 max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12">
         {/* Left Content */}
         <div className="flex-1 space-y-6 text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold uppercase tracking-wider">

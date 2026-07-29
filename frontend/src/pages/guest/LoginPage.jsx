@@ -59,16 +59,19 @@ export default function LoginPage() {
         </div>
 
         {/* Footer features */}
-        <div className="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
+        <div className="relative z-10 grid grid-cols-4 gap-4 bg-white/95 border border-slate-100 rounded-3xl p-4 shadow-lg text-slate-800">
           {[
-            { label: "AI-Powered", sub: "Detection" },
-            { label: "Community", sub: "Driven" },
-            { label: "Real-time", sub: "Alerts" },
-            { label: "Data-Driven", sub: "Insights" }
+            { label: "AI-Powered", sub: "Detection", icon: "⚙️", color: "bg-blue-100 text-blue-600" },
+            { label: "Community", sub: "Driven", icon: "👥", color: "bg-green-100 text-green-700" },
+            { label: "Real-time", sub: "Alerts", icon: "🔔", color: "bg-amber-100 text-amber-600" },
+            { label: "Data-Driven", sub: "Insights", icon: "📊", color: "bg-purple-100 text-purple-600" }
           ].map((item, idx) => (
-            <div key={idx} className="text-center">
-              <span className="block text-xs font-extrabold text-white">{item.label}</span>
-              <span className="block text-[9px] text-slate-400 font-medium">{item.sub}</span>
+            <div key={idx} className="flex flex-col items-center text-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${item.color} mb-1.5`}>
+                {item.icon}
+              </div>
+              <span className="block text-[9px] font-extrabold text-slate-800 leading-none">{item.label}</span>
+              <span className="block text-[8px] text-slate-400 font-bold mt-0.5 leading-none">{item.sub}</span>
             </div>
           ))}
         </div>
