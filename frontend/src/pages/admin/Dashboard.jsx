@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate as useNav } from 'react-router-dom';
 import MapPlaceholder from '../../components/MapPlaceholder';
-import { mockHazards, mockStats, mockUsers } from '../../data/mockData';
+import { useHazards } from '../../context/HazardContext';
 import api from '../../services/api';
 import {
   IoWarningOutline, IoShieldOutline, IoPeopleOutline, IoDocumentTextOutline,
@@ -15,8 +15,22 @@ import {
 
 export default function AdminDashboard() {
   const navigate = useNav();
+  const { geojson } = useHazards();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Convert GeoJSON to hazard array for the mini-map
+  const mapHazards = geojson?.features?.slice(0, 8).map(f => ({
+    id: f.properties.hazard_id,
+    type: f.properties.hazard_type,
+    severity: f.properties.severity,
+    lat: f.geometry.coordinates[1],
+    lng: f.geometry.coordinates[0],
+    confidence: f.properties.confidence,
+    crowdsource_count: f.properties.crowdsource_count,
+    is_verified: f.properties.is_verified,
+    status: f.properties.status,
+  })) || [];
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -248,7 +262,7 @@ export default function AdminDashboard() {
         <div className="lg:col-span-1 bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between h-[360px]">
           <span className="text-xs font-extrabold text-slate-800 border-b border-slate-50 pb-2 block">City Road Quality Map</span>
           <div className="w-full h-64 rounded-2xl overflow-hidden border border-slate-100 relative">
-            <MapPlaceholder hazards={mockHazards.slice(0, 4)} mode="admin" />
+            <MapPlaceholder hazards={mapHazards} mode="admin" />
           </div>
         </div>
 

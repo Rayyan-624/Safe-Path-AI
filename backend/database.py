@@ -101,7 +101,7 @@ async def init_db() -> None:
     from sqlalchemy.ext.asyncio import AsyncSession
     async with AsyncSession(engine) as session:
         from sqlalchemy import select
-        from models import User, HazardReport, UserRole, HazardType, SeverityLevel, RepairStatus
+        from models import User, HazardReport, UserRole, HazardType, SeverityLevel, RepairStatus, Notification, NotificationType
 
         # Check if users already exist
         res = await session.execute(select(User))
@@ -181,6 +181,42 @@ async def init_db() -> None:
                 )
             ]
             session.add_all(hazards)
+            await session.flush()
+
+            # Seed sample notifications for the driver user
+            notifications = [
+                Notification(
+                    user_id=driver.id,
+                    type=NotificationType.HAZARD_ALERT.value,
+                    title="Critical Pothole Detected Ahead",
+                    message="Large pothole detected on Shahrah-e-Faisal near Teen Hatti. Drive with extreme caution.",
+                    is_read=False,
+                    hazard_id=hazards[0].id,
+                ),
+                Notification(
+                    user_id=driver.id,
+                    type=NotificationType.MUNICIPALITY.value,
+                    title="Street Cleaning Schedule",
+                    message="Clifton Block 5 & 6 street cleaning on 26 May 2024 from 6:00 AM to 10:00 AM.",
+                    is_read=False,
+                ),
+                Notification(
+                    user_id=driver.id,
+                    type=NotificationType.HAZARD_ALERT.value,
+                    title="Open Manhole Nearby",
+                    message="Open manhole without warning signs reported near your frequent routes.",
+                    is_read=True,
+                    hazard_id=hazards[3].id,
+                ),
+                Notification(
+                    user_id=driver.id,
+                    type=NotificationType.SYSTEM.value,
+                    title="Welcome to SafePath AI!",
+                    message="Your account is active. Start reporting hazards to earn reward points and help your community.",
+                    is_read=True,
+                ),
+            ]
+            session.add_all(notifications)
             await session.commit()
             logger.info("Database successfully seeded.")
         else:

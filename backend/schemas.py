@@ -40,9 +40,25 @@ class UserResponse(BaseModel):
     email: str
     display_name: Optional[str]
     role: str
+    is_active: bool
     created_at: datetime
+    updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdateRequest(BaseModel):
+    """Admin: update a user's role or active status."""
+    display_name: Optional[str] = Field(None, max_length=128)
+    role: Optional[str] = Field(None, description="driver | admin")
+    is_active: Optional[bool] = None
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in {"driver", "admin"}:
+            raise ValueError("role must be 'driver' or 'admin'")
+        return v
 
 
 # ---------------------------------------------------------------------------
@@ -100,6 +116,7 @@ class HazardReportOut(BaseModel):
 class HazardListItem(BaseModel):
     """Compact hazard summary used in list endpoints."""
     id: str
+    user_id: Optional[str] = None
     hazard_type: str
     severity: str
     confidence: float
@@ -108,7 +125,10 @@ class HazardListItem(BaseModel):
     crowdsource_count: int
     is_verified: bool
     status: str
+    description: Optional[str] = None
+    image_path: Optional[str] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
@@ -247,3 +267,89 @@ class MessageResponse(BaseModel):
 
 class ErrorDetail(BaseModel):
     detail: str
+
+
+# ---------------------------------------------------------------------------
+# GPS schemas
+# ---------------------------------------------------------------------------
+
+class GPSPingIn(BaseModel):
+    """Single GPS location ping submitted by the client."""
+    latitude: float = Field(..., ge=-90.0, le=90.0)
+    longitude: float = Field(..., ge=-180.0, le=180.0)
+    speed_kmh: Optional[float] = Field(None, ge=0.0, le=400.0)
+    accuracy_metres: Optional[float] = Field(None, ge=0.0)
+    heading: Optional[float] = Field(None, ge=0.0, le=360.0)
+
+
+class GPSPingOut(BaseModel):
+    """Response after storing a GPS ping."""
+    id: str
+    user_id: str
+    latitude: float
+    longitude: float
+    speed_kmh: Optional[float]
+    accuracy_metres: Optional[float]
+    heading: Optional[float]
+    recorded_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# Notification schemas
+# ---------------------------------------------------------------------------
+
+class NotificationOut(BaseModel):
+    """Single notification response object."""
+    id: str
+    user_id: str
+    type: str
+    title: str
+    message: str
+    is_read: bool
+    hazard_id: Optional[str]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class NotificationMarkReadRequest(BaseModel):
+    """Request to mark specific notifications as read."""
+    notification_ids: List[str]
+
+
+# ---------------------------------------------------------------------------
+# Dashboard schemas
+# ---------------------------------------------------------------------------
+
+class UserDashboardData(BaseModel):
+    """Data bundle for the driver/user dashboard."""
+    total_reports: int
+    reports_this_week: int
+    nearby_hazard_count: int
+    unread_notifications: int
+
+
+class AdminDashboardData(BaseModel):
+    """Data bundle for the admin dashboard."""
+    total_hazards: int
+    total_users: int
+    active_users: int
+    verified_hazards: int
+    reports_last_7_days: int
+    reports_last_30_days: int
+    by_severity: Dict[str, int]
+    by_type: Dict[str, int]
+    by_status: Dict[str, int]
+    hotspot_zones: List["HotspotZone"]
+
+
+# ---------------------------------------------------------------------------
+# Report / export schema (named endpoint wrapper)
+# ---------------------------------------------------------------------------
+
+class ReportSummary(BaseModel):
+    """Summary of a generated hazard report bundle."""
+    total: int
+    hazards: List[HazardListItem]

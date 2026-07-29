@@ -25,6 +25,7 @@ from auth_utils import init_firebase_app
 from config import settings
 from database import init_db
 from routers import analytics, auth, hazards, websocket
+from routers import users, gps, notifications, dashboard
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -136,6 +137,10 @@ app.include_router(auth.router)
 app.include_router(hazards.router)
 app.include_router(analytics.router)
 app.include_router(websocket.router)
+app.include_router(users.router)
+app.include_router(gps.router)
+app.include_router(notifications.router)
+app.include_router(dashboard.router)
 
 
 # ---------------------------------------------------------------------------

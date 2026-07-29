@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockDriverInfo, mockStats } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
 import {
   IoCameraOutline, IoShareOutline, IoSettingsOutline, IoStatsChartOutline,
   IoNotificationsOutline, IoShieldOutline, IoChevronForwardOutline, IoCalendarOutline,
@@ -9,19 +9,27 @@ import {
 
 export default function DriverProfile() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Derive profile info from authenticated user object
+  const displayName  = user?.display_name || user?.email?.split('@')[0] || 'Driver';
+  const email        = user?.email || '—';
+  const memberSince  = user?.created_at
+    ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    : 'N/A';
 
   const badges = [
-    { name: "Road Guard", level: "Level 5", icon: "🛡️", desc: "For hazard spotters", color: "bg-blue-50 text-blue-600 border-blue-100" },
-    { name: "Eco Driver", level: "Level 3", icon: "🌱", desc: "For carbon savers", color: "bg-green-50 text-green-700 border-green-100" },
-    { name: "Community Hero", level: "Level 2", icon: "👥", desc: "For group helpers", color: "bg-purple-50 text-purple-600 border-purple-100" },
-    { name: "Reporter", level: "Level 4", icon: "📢", desc: "For bulk reporting", color: "bg-amber-50 text-amber-700 border-amber-100" }
+    { name: "Road Guard",       level: "Level 5", icon: "🛡️", desc: "For hazard spotters",  color: "bg-blue-50 text-blue-600 border-blue-100" },
+    { name: "Eco Driver",       level: "Level 3", icon: "🌱", desc: "For carbon savers",    color: "bg-green-50 text-green-700 border-green-100" },
+    { name: "Community Hero",   level: "Level 2", icon: "👥", desc: "For group helpers",    color: "bg-purple-50 text-purple-600 border-purple-100" },
+    { name: "Reporter",         level: "Level 4", icon: "📢", desc: "For bulk reporting",   color: "bg-amber-50 text-amber-700 border-amber-100" }
   ];
 
   const achievements = [
-    { title: "100 Safe Drives", date: "10 May 2024", desc: "Completed 100 safe drives without any high risk alerts." },
-    { title: "Top Reporter", date: "03 May 2024", desc: "Submitted 50+ verified reports." },
-    { title: "Hazard Avoider", date: "28 Apr 2024", desc: "Avoided 20 high risk hazards." },
-    { title: "Week Warrior", date: "21 Apr 2024", desc: "Active for 7 days in a row." }
+    { title: "100 Safe Drives",  date: "10 May 2024", desc: "Completed 100 safe drives without any high risk alerts." },
+    { title: "Top Reporter",     date: "03 May 2024", desc: "Submitted 50+ verified reports." },
+    { title: "Hazard Avoider",   date: "28 Apr 2024", desc: "Avoided 20 high risk hazards." },
+    { title: "Week Warrior",     date: "21 Apr 2024", desc: "Active for 7 days in a row." }
   ];
 
   return (
@@ -41,7 +49,9 @@ export default function DriverProfile() {
         {/* Left Side avatar */}
         <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
           <div className="relative w-24 h-24 rounded-full bg-slate-100 border-4 border-white shadow-lg overflow-hidden shrink-0 group cursor-pointer">
-            <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop" alt="avatar" className="w-full h-full object-cover" />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-3xl font-extrabold">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs">
               <IoCameraOutline className="w-6 h-6" />
             </div>
@@ -49,14 +59,19 @@ export default function DriverProfile() {
 
           <div className="space-y-2 leading-tight">
             <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-              <h3 className="text-lg font-extrabold text-slate-800">{mockDriverInfo.name}</h3>
-              <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 font-extrabold text-[9px] rounded-full uppercase tracking-wider">Premium Member</span>
+              <h3 className="text-lg font-extrabold text-slate-800">{displayName}</h3>
+              <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 font-extrabold text-[9px] rounded-full uppercase tracking-wider">
+                {user?.role === 'admin' ? 'Administrator' : 'Member'}
+              </span>
             </div>
             
             <div className="space-y-1 text-slate-500 text-xs font-semibold">
-              <span className="block flex items-center gap-1.5 justify-center sm:justify-start"><IoMailOutline className="w-4 h-4 text-slate-400" />{mockDriverInfo.email}</span>
-              <span className="block flex items-center gap-1.5 justify-center sm:justify-start"><IoCallOutline className="w-4 h-4 text-slate-400" />{mockDriverInfo.phone}</span>
-              <span className="block flex items-center gap-1.5 justify-center sm:justify-start"><IoLocationOutline className="w-4 h-4 text-slate-400" />{mockDriverInfo.location}</span>
+              <span className="block flex items-center gap-1.5 justify-center sm:justify-start">
+                <IoMailOutline className="w-4 h-4 text-slate-400" />{email}
+              </span>
+              <span className="block flex items-center gap-1.5 justify-center sm:justify-start">
+                <IoCalendarOutline className="w-4 h-4 text-slate-400" />Joined {memberSince}
+              </span>
             </div>
 
             <div className="flex gap-2 justify-center sm:justify-start pt-1">
@@ -70,11 +85,11 @@ export default function DriverProfile() {
         <div className="grid grid-cols-2 gap-8 text-center sm:text-left border-y sm:border-y-0 sm:border-x border-slate-100 py-4 sm:py-0 px-8">
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Member Since</span>
-            <span className="text-sm font-extrabold text-slate-800 mt-1 block">{mockDriverInfo.memberSince}</span>
+            <span className="text-sm font-extrabold text-slate-800 mt-1 block">{memberSince}</span>
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Points</span>
-            <span className="text-sm font-extrabold text-green-600 mt-1 block">{mockDriverInfo.totalPoints} pts</span>
+            <span className="text-sm font-extrabold text-green-600 mt-1 block">2,840 pts</span>
           </div>
         </div>
 
@@ -83,8 +98,8 @@ export default function DriverProfile() {
           <div className="flex items-center gap-2">
             <span className="text-2xl">🏆</span>
             <div>
-              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Level {mockDriverInfo.level}</span>
-              <span className="text-xs font-extrabold text-slate-800 block leading-none">{mockDriverInfo.levelName}</span>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Level 7</span>
+              <span className="text-xs font-extrabold text-slate-800 block leading-none">Road Guardian</span>
             </div>
           </div>
           <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
@@ -114,12 +129,14 @@ export default function DriverProfile() {
             </div>
 
             <div className="space-y-2 text-xs font-bold text-slate-500">
-              <div className="flex justify-between items-center"><span className="text-slate-800 text-sm font-extrabold">{mockDriverInfo.vehicle.name}</span><span className="px-2 py-0.5 bg-green-100 text-green-700 text-[8px] rounded-full uppercase tracking-wider">Active</span></div>
-              <div className="flex justify-between items-center"><span>Registration</span><span className="text-slate-800 font-extrabold">{mockDriverInfo.vehicle.registration}</span></div>
-              <div className="flex justify-between items-center"><span>Vehicle Type</span><span className="text-slate-800 font-extrabold">{mockDriverInfo.vehicle.type}</span></div>
-              <div className="flex justify-between items-center"><span>Model Year</span><span className="text-slate-800 font-extrabold">{mockDriverInfo.vehicle.year}</span></div>
-              <div className="flex justify-between items-center"><span>Color</span><span className="text-slate-800 font-extrabold">{mockDriverInfo.vehicle.color}</span></div>
-              <div className="flex justify-between items-center"><span>Added On</span><span className="text-slate-800 font-semibold">{mockDriverInfo.vehicle.addedOn}</span></div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-800 text-sm font-extrabold">Honda CB150F</span>
+                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[8px] rounded-full uppercase tracking-wider">Active</span>
+              </div>
+              <div className="flex justify-between items-center"><span>Registration</span><span className="text-slate-800 font-extrabold">KHI-5421</span></div>
+              <div className="flex justify-between items-center"><span>Vehicle Type</span><span className="text-slate-800 font-extrabold">Motorcycle</span></div>
+              <div className="flex justify-between items-center"><span>Model Year</span><span className="text-slate-800 font-extrabold">2022</span></div>
+              <div className="flex justify-between items-center"><span>Color</span><span className="text-slate-800 font-extrabold">Black</span></div>
             </div>
           </div>
 
@@ -135,7 +152,7 @@ export default function DriverProfile() {
             <span className="text-xs font-extrabold text-slate-800">Driving Statistics</span>
             <div className="flex items-center gap-1 text-[10px] text-slate-400 font-bold">
               <IoCalendarOutline className="w-4 h-4" />
-              <span>18 May 2024 - 24 May 2024</span>
+              <span>Last 7 days</span>
             </div>
           </div>
 
@@ -226,11 +243,11 @@ export default function DriverProfile() {
           
           <div className="flex-1 flex flex-col gap-1">
             {[
-              { title: "Personal Information", sub: "Update name, email and phone number", icon: IoPersonOutline },
-              { title: "Notification Preferences", sub: "Manage your notification settings", icon: IoNotificationsOutline },
-              { title: "Privacy Settings", sub: "Control your data and visibility", icon: IoLockClosedOutline },
-              { title: "Connected Devices", sub: "Manage your connected devices", icon: IoSettingsOutline },
-              { title: "Account Settings", sub: "Change password and security options", icon: IoShieldOutline }
+              { title: "Personal Information",      sub: "Update name, email and phone number",  icon: IoPersonOutline },
+              { title: "Notification Preferences",  sub: "Manage your notification settings",    icon: IoNotificationsOutline },
+              { title: "Privacy Settings",           sub: "Control your data and visibility",     icon: IoLockClosedOutline },
+              { title: "Connected Devices",          sub: "Manage your connected devices",        icon: IoSettingsOutline },
+              { title: "Account Settings",           sub: "Change password and security options", icon: IoShieldOutline }
             ].map((set, idx) => {
               const SetIcon = set.icon;
               return (

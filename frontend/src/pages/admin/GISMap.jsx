@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import MapPlaceholder from '../../components/MapPlaceholder';
-import { mockHazards } from '../../data/mockData';
+import { useHazards } from '../../context/HazardContext';
 import {
   IoSearchOutline, IoRefreshOutline, IoFunnelOutline, IoLayersOutline,
   IoSettingsOutline, IoStatsChartOutline
 } from 'react-icons/io5';
 
 export default function AdminGISMap() {
+  const { geojson, loading, refreshData } = useHazards();
   const [search, setSearch] = useState('');
   
   // Layer states
@@ -33,8 +34,22 @@ export default function AdminGISMap() {
     setThreshold('All');
   };
 
+  // Convert GeoJSON features to hazard array for the map component
+  const allHazards = geojson?.features?.map(f => ({
+    id: f.properties.hazard_id,
+    type: f.properties.hazard_type,
+    severity: f.properties.severity,
+    confidence: f.properties.confidence,
+    lat: f.geometry.coordinates[1],
+    lng: f.geometry.coordinates[0],
+    crowdsource_count: f.properties.crowdsource_count,
+    is_verified: f.properties.is_verified,
+    status: f.properties.status,
+    created_at: f.properties.created_at,
+  })) || [];
+
   // Filter coordinates based on selections
-  const filteredHazards = mockHazards.filter(h => {
+  const filteredHazards = allHazards.filter(h => {
     if (h.type === 'Pothole' && !hazards.Potholes) return false;
     if (h.type === 'Road Crack' && !hazards.Cracks) return false;
     if (h.type === 'Flooded Road' && !hazards.Flood) return false;

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { mockHazards } from '../../data/mockData';
 import MapPlaceholder from '../../components/MapPlaceholder';
 import { IoSearchOutline, IoRefreshOutline, IoFunnelOutline, IoCheckmarkCircleOutline } from 'react-icons/io5';
 import { useHazards } from '../../context/HazardContext';
@@ -39,7 +38,8 @@ export default function DriverLiveMap() {
     created_at: f.properties.created_at
   })) || [];
 
-  const activeHazardsList = rawHazards.length > 0 ? rawHazards : mockHazards;
+  // Use live data from API; empty array when backend has no entries yet
+  const activeHazardsList = rawHazards;
 
   // Filter hazards
   const filteredHazards = activeHazardsList.filter(h => {

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockHazards, mockStats } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { useHazards } from '../../context/HazardContext';
+import { dashboardService } from '../../services/api';
 import MapPlaceholder from '../../components/MapPlaceholder';
 import {
   IoSpeedometerOutline, IoTrendingUpOutline, IoTimeOutline, IoCarOutline,
@@ -12,19 +14,88 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 export default function DriverDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { nearbyHazards, geojson } = useHazards();
 
-  // Gauge Chart Data for Road Health Score (78%)
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loadingDash, setLoadingDash] = useState(true);
+
+  // Fetch driver dashboard summary from backend
+  useEffect(() => {
+    const load = async () => {
+      try {
+        // Get user's current coords from geolocation if available
+        let lat = 24.8607, lng = 67.0099;
+        if (navigator.geolocation) {
+          await new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => { lat = pos.coords.latitude; lng = pos.coords.longitude; resolve(); },
+              () => resolve(),
+              { timeout: 3000 }
+            );
+          });
+        }
+        const res = await dashboardService.getUserDashboard(lat, lng);
+        setDashboardData(res.data);
+      } catch (err) {
+        console.warn('Dashboard API unavailable, using defaults:', err.message);
+      } finally {
+        setLoadingDash(false);
+      }
+    };
+    load();
+  }, []);
+
+  // Convert GeoJSON features to hazard objects for the mini-map
+  const mapHazards = geojson?.features?.map(f => ({
+    id: f.properties.hazard_id,
+    type: f.properties.hazard_type,
+    severity: f.properties.severity,
+    lat: f.geometry.coordinates[1],
+    lng: f.geometry.coordinates[0],
+    confidence: f.properties.confidence,
+    crowdsource_count: f.properties.crowdsource_count,
+    is_verified: f.properties.is_verified,
+    status: f.properties.status,
+  })) || [];
+
+  // Gauge Chart Data for Road Health Score
+  const roadHealthScore = dashboardData?.road_health_score ?? 78;
   const gaugeData = [
-    { value: 78, color: '#22c55e' },
-    { value: 22, color: '#e2e8f0' }
+    { value: roadHealthScore, color: '#22c55e' },
+    { value: 100 - roadHealthScore, color: '#e2e8f0' }
   ];
 
-  const recentAlerts = [
-    { type: "Pothole detected", road: "Shahrah-e-Faisal", severity: "High", color: "bg-red-500", label: "120 m ahead", time: "2 min ago" },
-    { type: "Road construction", road: "Korangi Road", severity: "Medium", color: "bg-orange-500", label: "450 m ahead", time: "15 min ago" },
-    { type: "Water logging reported", road: "University Road", severity: "Low", color: "bg-yellow-500", label: "800 m ahead", time: "35 min ago" },
-    { type: "Heavy traffic reported", road: "I.I Chundrigar Road", severity: "Info", color: "bg-blue-500", label: "1.2 km ahead", time: "50 min ago" }
+  // Live nearby alerts from backend
+  const recentAlerts = nearbyHazards.slice(0, 4).map(h => {
+    const color =
+      h.severity === 'Critical' ? 'bg-red-500' :
+      h.severity === 'Moderate' ? 'bg-orange-500' :
+      h.severity === 'Minor' ? 'bg-yellow-500' : 'bg-blue-500';
+    const distM = h.distance_m ? `${Math.round(h.distance_m)} m ahead` : 'Nearby';
+    return {
+      type: h.hazard_type,
+      road: `${h.latitude?.toFixed(4) ?? '?'}, ${h.longitude?.toFixed(4) ?? '?'}`,
+      severity: h.severity,
+      color,
+      label: distM,
+      time: h.created_at ? new Date(h.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—',
+      id: h.hazard_id,
+    };
+  });
+
+  // Fallback static alerts when no backend data
+  const displayAlerts = recentAlerts.length > 0 ? recentAlerts : [
+    { type: "Pothole detected", road: "Shahrah-e-Faisal", severity: "High", color: "bg-red-500", label: "120 m ahead", time: "2 min ago", id: null },
+    { type: "Road construction", road: "Korangi Road", severity: "Medium", color: "bg-orange-500", label: "450 m ahead", time: "15 min ago", id: null },
+    { type: "Water logging reported", road: "University Road", severity: "Low", color: "bg-yellow-500", label: "800 m ahead", time: "35 min ago", id: null },
+    { type: "Heavy traffic reported", road: "I.I Chundrigar Road", severity: "Info", color: "bg-blue-500", label: "1.2 km ahead", time: "50 min ago", id: null }
   ];
+
+  // Stats from backend or sensible defaults
+  const todayDistance = dashboardData?.today_km ?? 36;
+  const driveTime = dashboardData?.drive_time ?? '2h 18m';
+  const totalTripsToday = dashboardData?.trips_today ?? 3;
 
   return (
     <div className="space-y-6">
@@ -45,7 +116,7 @@ export default function DriverDashboard() {
           </div>
 
           <div className="w-full h-80 rounded-2xl overflow-hidden relative">
-            <MapPlaceholder hazards={mockHazards} mode="user" />
+            <MapPlaceholder hazards={mapHazards} mode="user" />
           </div>
 
           {/* Map Legend */}
@@ -56,7 +127,7 @@ export default function DriverDashboard() {
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>Moderate</span>
               <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>Poor</span>
             </div>
-            <span className="text-slate-400">Live Karachi Coverage</span>
+            <span className="text-slate-400">Live Coverage</span>
           </div>
         </div>
 
@@ -91,7 +162,7 @@ export default function DriverDashboard() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pt-1">
-                  <span className="text-2xl font-extrabold text-slate-800">78</span>
+                  <span className="text-2xl font-extrabold text-slate-800">{roadHealthScore}</span>
                   <span className="text-[9px] font-bold uppercase text-green-600 tracking-wider">Good</span>
                 </div>
               </div>
@@ -171,11 +242,11 @@ export default function DriverDashboard() {
           </div>
           <div className="text-left flex-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Today's Distance</span>
-            <span className="block text-xl font-extrabold text-slate-800">{mockStats.todayDistance} km</span>
+            <span className="block text-xl font-extrabold text-slate-800">{todayDistance} km</span>
             <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-              <div className="bg-green-500 h-full" style={{ width: '60%' }}></div>
+              <div className="bg-green-500 h-full" style={{ width: `${Math.min(100, (todayDistance / 60) * 100).toFixed(0)}%` }}></div>
             </div>
-            <span className="text-[8px] font-semibold text-slate-400">Goal: 60 km (60%)</span>
+            <span className="text-[8px] font-semibold text-slate-400">Goal: 60 km</span>
           </div>
         </div>
 
@@ -186,7 +257,7 @@ export default function DriverDashboard() {
           </div>
           <div className="text-left">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Drive Time</span>
-            <span className="block text-xl font-extrabold text-slate-800">{mockStats.driveTime}</span>
+            <span className="block text-xl font-extrabold text-slate-800">{driveTime}</span>
             <span className="text-[8px] font-semibold text-slate-400">Total Driving Time</span>
           </div>
         </div>
@@ -198,7 +269,7 @@ export default function DriverDashboard() {
           </div>
           <div className="text-left">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Trips</span>
-            <span className="block text-xl font-extrabold text-slate-800">{mockStats.totalTripsToday}</span>
+            <span className="block text-xl font-extrabold text-slate-800">{totalTripsToday}</span>
             <span className="text-[8px] font-semibold text-slate-400">Detections Synced</span>
           </div>
         </div>
@@ -216,8 +287,12 @@ export default function DriverDashboard() {
           </div>
 
           <div className="divide-y divide-slate-100">
-            {recentAlerts.map((alert, i) => (
-              <div key={i} className="flex items-center justify-between py-3 group cursor-pointer hover:bg-slate-50/50 px-2 rounded-xl transition-colors" onClick={() => navigate('/driver/hazard/HZ-2024-05-18-1023')}>
+            {displayAlerts.map((alert, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between py-3 group cursor-pointer hover:bg-slate-50/50 px-2 rounded-xl transition-colors"
+                onClick={() => alert.id ? navigate(`/driver/hazard/${alert.id}`) : null}
+              >
                 <div className="flex items-center gap-3">
                   <div className={`w-2.5 h-2.5 rounded-full ${alert.color}`}></div>
                   <div className="text-left">
@@ -228,7 +303,9 @@ export default function DriverDashboard() {
                 <div className="flex items-center gap-4 text-right">
                   <div className="text-left">
                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                      alert.severity === 'High' ? 'bg-red-50 text-red-600' : alert.severity === 'Medium' ? 'bg-orange-50 text-orange-500' : 'bg-yellow-50 text-yellow-600'
+                      alert.severity === 'High' || alert.severity === 'Critical' ? 'bg-red-50 text-red-600' :
+                      alert.severity === 'Medium' || alert.severity === 'Moderate' ? 'bg-orange-50 text-orange-500' :
+                      'bg-yellow-50 text-yellow-600'
                     }`}>{alert.severity}</span>
                     <span className="block text-[10px] text-slate-400 mt-0.5">{alert.label}</span>
                   </div>

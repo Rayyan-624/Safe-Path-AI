@@ -27,6 +27,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy import Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -64,6 +65,13 @@ class RepairStatus(str, PyEnum):
 class UserRole(str, PyEnum):
     DRIVER = "driver"
     ADMIN = "admin"
+
+
+class NotificationType(str, PyEnum):
+    HAZARD_ALERT = "hazard_alert"
+    SYSTEM = "system"
+    MAINTENANCE = "maintenance"
+    MUNICIPALITY = "municipality"
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +120,12 @@ class User(Base):
     # Relationships
     reports: Mapped[list["HazardReport"]] = relationship(
         "HazardReport", back_populates="reporter", lazy="select"
+    )
+    gps_locations: Mapped[list["GPSLocation"]] = relationship(
+        "GPSLocation", back_populates="user", lazy="select"
+    )
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification", back_populates="user", lazy="select"
     )
 
     def __repr__(self) -> str:
@@ -188,3 +202,81 @@ class HazardReport(Base):
             f"<HazardReport id={self.id} type={self.hazard_type} "
             f"severity={self.severity} lat={self.latitude:.4f} lng={self.longitude:.4f}>"
         )
+
+
+# ---------------------------------------------------------------------------
+# GPSLocation
+# ---------------------------------------------------------------------------
+
+class GPSLocation(Base):
+    """
+    Stores GPS location pings from authenticated users.
+    Used for trip history, route replay, and future heatmap analytics.
+    """
+
+    __tablename__ = "gps_locations"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=_new_uuid
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user: Mapped["User"] = relationship("User", back_populates="gps_locations")
+
+    latitude: Mapped[float] = mapped_column(Float, nullable=False)
+    longitude: Mapped[float] = mapped_column(Float, nullable=False)
+    speed_kmh: Mapped[float | None] = mapped_column(Float, nullable=True)
+    accuracy_metres: Mapped[float | None] = mapped_column(Float, nullable=True)
+    heading: Mapped[float | None] = mapped_column(Float, nullable=True)  # degrees 0–360
+
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, nullable=False, index=True
+    )
+
+    __table_args__ = (
+        Index("ix_gps_user_recorded", "user_id", "recorded_at"),
+    )
+
+    def __repr__(self) -> str:
+        return f"<GPSLocation user={self.user_id} lat={self.latitude:.4f} lng={self.longitude:.4f}>"
+
+
+# ---------------------------------------------------------------------------
+# Notification
+# ---------------------------------------------------------------------------
+
+class Notification(Base):
+    """
+    Per-user notifications.  Created server-side when hazards are reported nearby
+    or when an admin broadcasts a system message.
+    """
+
+    __tablename__ = "notifications"
+
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=_new_uuid
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user: Mapped["User"] = relationship("User", back_populates="notifications")
+
+    type: Mapped[str] = mapped_column(
+        String(32), default=NotificationType.HAZARD_ALERT.value, nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Optional link to a related hazard
+    hazard_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("hazard_reports.id", ondelete="SET NULL"), nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, nullable=False, index=True
+    )
+
+    def __repr__(self) -> str:
+        return f"<Notification id={self.id} user={self.user_id} type={self.type} read={self.is_read}>"

@@ -36,6 +36,8 @@ from schemas import (
     HazardListItem,
     HazardReportOut,
     HazardStatusUpdate,
+    MessageResponse,
+    ReportSummary,
     SensorDataIn,
 )
 
@@ -436,3 +438,93 @@ async def update_hazard_status(
 
     logger.info("Admin updated hazard %s status → %s", hazard_id, body.status)
     return HazardListItem.model_validate(hazard)
+
+
+# ---------------------------------------------------------------------------
+# GET /hazards/{hazard_id}  — single hazard detail
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/{hazard_id}",
+    response_model=HazardListItem,
+    status_code=status.HTTP_200_OK,
+    summary="Get a single hazard report by ID",
+)
+async def get_hazard_by_id(
+    hazard_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> HazardListItem:
+    result = await db.execute(
+        select(HazardReport).where(HazardReport.id == hazard_id)
+    )
+    hazard = result.scalar_one_or_none()
+    if hazard is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Hazard '{hazard_id}' not found.",
+        )
+    return HazardListItem.model_validate(hazard)
+
+
+# ---------------------------------------------------------------------------
+# DELETE /hazards/{hazard_id}  — admin delete
+# ---------------------------------------------------------------------------
+
+@router.delete(
+    "/{hazard_id}",
+    response_model=MessageResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Admin: permanently delete a hazard report",
+)
+async def delete_hazard(
+    hazard_id: str,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> MessageResponse:
+    result = await db.execute(
+        select(HazardReport).where(HazardReport.id == hazard_id)
+    )
+    hazard = result.scalar_one_or_none()
+    if hazard is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Hazard '{hazard_id}' not found.",
+        )
+    await db.delete(hazard)
+    logger.info("Admin deleted hazard %s", hazard_id)
+    return MessageResponse(message=f"Hazard '{hazard_id}' has been deleted.")
+
+
+# ---------------------------------------------------------------------------
+# GET /hazards/reports  — named reports endpoint
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/reports/export",
+    response_model=ReportSummary,
+    status_code=status.HTTP_200_OK,
+    summary="Admin: export all hazard reports as a bundle",
+)
+async def export_reports(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(200, ge=1, le=1000),
+    severity: Optional[str] = Query(None),
+    hazard_type: Optional[str] = Query(None),
+    repair_status: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> ReportSummary:
+    stmt = select(HazardReport)
+    if severity:
+        stmt = stmt.where(HazardReport.severity == severity)
+    if hazard_type:
+        stmt = stmt.where(HazardReport.hazard_type == hazard_type)
+    if repair_status:
+        stmt = stmt.where(HazardReport.status == repair_status)
+    stmt = stmt.order_by(HazardReport.created_at.desc()).offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    hazards = result.scalars().all()
+    return ReportSummary(
+        total=len(hazards),
+        hazards=[HazardListItem.model_validate(h) for h in hazards],
+    )
